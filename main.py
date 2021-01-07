@@ -1,8 +1,10 @@
 from connection import Connection
 from config import ProxMoxConfig
+from processing import Processing
 import json
 
 pmconfig = ProxMoxConfig()
+pmprocessing = Processing()
 pmconnection = Connection()
 pmconnection.set_session(pmconfig.pmApi, pmconfig.pmAuthJson)
 
@@ -17,3 +19,6 @@ node = nodes["data"][0]["node"]
 #print(pmconnection.set_network_bridge(node, "900"))
 #print(pmconnection.get_node_network_bridges(node))
 
+pmprocessing.node_list_vms_and_templates(pmconnection.get_virtual_machines(node), node)
+print(pmprocessing.templates)
+print(pmprocessing.endpoints)

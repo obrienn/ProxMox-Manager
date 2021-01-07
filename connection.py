@@ -1,7 +1,8 @@
 import requests
 import json
 
-class Connection():
+
+class Connection:
     pmApi = ''
     pmAuthJson = {}
 
@@ -37,6 +38,11 @@ class Connection():
         node_bridges_json = json.dumps(node_bridges)
         return node_bridges_json
 
+    def get_virtual_machines(self, vmNode):
+        apiNodeVms = self.pmApi + "/api2/json/nodes/" + vmNode + "/qemu"
+        pm_node_vms = requests.get(apiNodeVms, headers=self.pmAuthJson, verify=False)
+        return pm_node_vms.json()
+
     def get_snapshots(self, vmNode, vmID):
         apiSnapshots = self.pmApi + "/api2/json/nodes/" + vmNode + "/qemu/" + vmID + "/snapshot"
         pm_snapshots = requests.get(apiSnapshots, headers=self.pmAuthJson, verify="False")
@@ -62,7 +68,6 @@ class Connection():
             "vmid": vmID,
             "force": forceDelete
         }
-
         apiDeleteSnapshot = self.pmApi + "/api2/json/nodes/" + vmNode + "/qemu/" + vmID + "/snapshot/" + snapshotName
         print(apiDeleteSnapshot)
         pm_delete_snapshot = requests.delete(apiDeleteSnapshot, headers=newHeader, verify=False)
@@ -86,7 +91,6 @@ class Connection():
             "vmid": vmID,
             vmNetId: vmNetBridge
         }
-
         apiSetNetBridge = self.pmApi + "/api2/json/nodes/" + vmNode + "/qemu/" + vmID + "/config"
         pm_set_net_bridge = requests.post(apiSetNetBridge, headers=self.pmAuthJson, data=data, verify=False)
         return pm_set_net_bridge.json()
