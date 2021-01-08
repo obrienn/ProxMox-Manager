@@ -1,10 +1,16 @@
 import requests
 import json
+import time
 
 
 class Connection:
+    requests.packages.urllib3.disable_warnings()
     pmApi = ''
     pmAuthJson = {}
+    templates = {}
+    endpoints = {}
+    snapshots = {}
+    pools = {}
 
     def set_session(self, myApi, myAuthJson):
         self.pmApi = myApi
@@ -16,6 +22,20 @@ class Connection:
         payload = {'username': pmUser, 'password': pmPass}
         pm_session = requests.post(self.pmAuthJson, payload, verify=False)
         return pm_session.json()
+
+    def get_task_status(self, vmNode, upid):
+        apiTaskStatus = self.pmApi + "/api2/json/nodes/" + vmNode + "/tasks/" + upid + "/status"
+        pm_task_status = requests.get(apiTaskStatus, headers=self.pmAuthJson, verify=False)
+        task_id_json = pm_task_status.json()
+        return task_id_json["data"]
+
+    def wait_on_task(self, vmNode, upid):
+        status = self.get_task_status(vmNode, upid)
+        print(status["status"] + " - " + status["type"] + ": " + status["id"])
+        while status["status"] == "running":
+            time.sleep(2)
+            status = self.get_task_status(vmNode, upid)
+        print(status["status"] + " - " + status["type"] + ": " + status["id"])
 
     def get_nodes(self):
         apiNodes = self.pmApi + "/api2/json/nodes"
@@ -43,10 +63,41 @@ class Connection:
         pm_node_vms = requests.get(apiNodeVms, headers=self.pmAuthJson, verify=False)
         return pm_node_vms.json()
 
+    def get_initial_gui_data(self, vmNodes):
+        for vmNode in vmNodes["data"]:
+            vms = self.get_virtual_machines(vmNode["node"])
+            for vm in vms["data"]:
+                if vm["template"] == 1:
+                    vm_details = {
+                        "name": vm["name"],
+                        "status": vm["status"],
+                        "node": vmNode["node"]
+                    }
+                    self.templates[vm["vmid"]] = vm_details
+                else:
+                    vm_details = {
+                        "name": vm["name"],
+                        "status": vm["status"],
+                        "node": vmNode["node"],
+                        "snapshots": self.get_snapshots(vmNode["node"], vm["vmid"])
+                    }
+                    self.endpoints[vm["vmid"]] = vm_details
+        apiGetPools = self.pmApi + "/api2/json/pools"
+        pm_get_pools = requests.get(apiGetPools, headers=self.pmAuthJson, verify=False)
+        for pool in pm_get_pools.json()["data"]:
+            pool_member_ids = []
+            apiGetPoolVms = self.pmApi + "/api2/json/pools/" + pool["poolid"]
+            pm_pool_vms = requests.get(apiGetPoolVms, headers=self.pmAuthJson, verify=False)
+            pool_members = pm_pool_vms.json()["data"]["members"]
+            for member in pool_members:
+                pool_member_ids.append(member["vmid"])
+            self.pools[pool["poolid"]] = pool_member_ids
+        return
+
     def get_snapshots(self, vmNode, vmID):
         apiSnapshots = self.pmApi + "/api2/json/nodes/" + vmNode + "/qemu/" + vmID + "/snapshot"
-        pm_snapshots = requests.get(apiSnapshots, headers=self.pmAuthJson, verify="False")
-        return pm_snapshots.json()
+        pm_snapshots = requests.get(apiSnapshots, headers=self.pmAuthJson, verify=False)
+        return pm_snapshots.json()["data"]
 
     def create_snapshot(self, vmNode, vmID, snapshotName, includeRam="0", description='Created by Python'):
         data = {
@@ -94,3 +145,47 @@ class Connection:
         apiSetNetBridge = self.pmApi + "/api2/json/nodes/" + vmNode + "/qemu/" + vmID + "/config"
         pm_set_net_bridge = requests.post(apiSetNetBridge, headers=self.pmAuthJson, data=data, verify=False)
         return pm_set_net_bridge.json()
+
+    def get_free_vmid(self):
+        apiFreeVmid = self.pmApi + "/api2/json/cluster/nextid"
+        pm_free_vmid = requests.get(apiFreeVmid, headers=self.pmAuthJson, verify=False)
+        freeVmid = pm_free_vmid.json()
+        return freeVmid["data"]
+
+
+    def create_pool(self, vmNode, vmPoolName):
+        apiCreatePool = self.pmApi + "/api2/json/pools"
+        data = {
+            "poolid": vmPoolName
+        }
+        pm_create_pool = requests.post(apiCreatePool, headers=self.pmAuthJson, data=data, verify=False)
+        return pm_create_pool.json()
+
+    def create_clone_linked(self, vmNode, vmSourceId, pool="Lab"):
+        apiClone = self.pmApi + "/api2/json/nodes/" + vmNode + "/qemu/" + vmSourceId + "/clone"
+        data = {
+            "newid": self.get_free_vmid(),
+            "pool": pool,
+            "full": "0"
+        }
+        pm_create_clone_linked = requests.post(apiClone, headers=self.pmAuthJson, data=data, verify=False)
+        return pm_create_clone_linked.json()["data"]
+
+    def create_clone_full(self, vmNode, vmSourceId, pool="Lab"):
+        apiClone = self.pmApi + "/api2/json/nodes/" + vmNode + "/qemu/" + vmSourceId + "/clone"
+        data = {
+            "newid": self.get_free_vmid(),
+            "pool": pool,
+            "full": "1"
+        }
+        pm_create_clone_linked = requests.post(apiClone, headers=self.pmAuthJson, data=data, verify=False)
+        return pm_create_clone_linked.json()["data"]
+
+    def destroy_vm(self, vmId):
+        apiDestroy = self.pmApi + "/api2/json/nodes/" + self.endpoints[vmId]["node"] + "/qemu/" + vmId
+        pm_destroy_vm = requests.delete(apiDestroy, headers=self.pmAuthJson, verify=False)
+        return pm_destroy_vm.json()
+
+    def destroy_pool_vms(self, pool):
+        for vm in self.pools[pool]:
+            self.destroy_vm(str(vm))

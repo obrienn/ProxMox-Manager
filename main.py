@@ -1,10 +1,9 @@
 from connection import Connection
 from config import ProxMoxConfig
-from processing import Processing
+import sys
 import json
 
 pmconfig = ProxMoxConfig()
-pmprocessing = Processing()
 pmconnection = Connection()
 pmconnection.set_session(pmconfig.pmApi, pmconfig.pmAuthJson)
 
@@ -18,7 +17,12 @@ node = nodes["data"][0]["node"]
 #print(vm_config["data"]["net0"])
 #print(pmconnection.set_network_bridge(node, "900"))
 #print(pmconnection.get_node_network_bridges(node))
+#pmc_ccl = pmconnection.create_clone_linked(node, "920")
+#pmc_ccf = pmconnection.create_clone_full(node, "920")
+#pmconnection.wait_on_task(node, pmc_ccf)
+#pmconnection.destroy_pool_vms("Lab")
 
-pmprocessing.node_list_vms_and_templates(pmconnection.get_virtual_machines(node), node)
-print(pmprocessing.templates)
-print(pmprocessing.endpoints)
+pmconnection.get_initial_gui_data(nodes)
+print(pmconnection.endpoints)
+print(pmconnection.templates)
+print(pmconnection.pools)
