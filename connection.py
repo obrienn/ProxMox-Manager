@@ -7,8 +7,7 @@ class Connection:
     requests.packages.urllib3.disable_warnings()
     pmApi = ''
     pmAuthJson = {}
-    templates = {}
-    endpoints = {}
+    virtual_machines = {}
     snapshots = {}
     pools = {}
 
@@ -36,6 +35,7 @@ class Connection:
             time.sleep(2)
             status = self.get_task_status(vmNode, upid)
         print(status["status"] + " - " + status["type"] + ": " + status["id"])
+        return
 
     def get_nodes(self):
         apiNodes = self.pmApi + "/api2/json/nodes"
@@ -64,6 +64,9 @@ class Connection:
         return pm_node_vms.json()
 
     def get_initial_gui_data(self, vmNodes):
+        self.pools = {}
+        self.virtual_machines = {}
+        self.snapshots = {}
         for vmNode in vmNodes["data"]:
             vms = self.get_virtual_machines(vmNode["node"])
             for vm in vms["data"]:
@@ -71,17 +74,19 @@ class Connection:
                     vm_details = {
                         "name": vm["name"],
                         "status": vm["status"],
-                        "node": vmNode["node"]
+                        "node": vmNode["node"],
+                        "template": 1
                     }
-                    self.templates[vm["vmid"]] = vm_details
+                    self.virtual_machines[vm["vmid"]] = vm_details
                 else:
                     vm_details = {
                         "name": vm["name"],
                         "status": vm["status"],
                         "node": vmNode["node"],
+                        "template": 0,
                         "snapshots": self.get_snapshots(vmNode["node"], vm["vmid"])
                     }
-                    self.endpoints[vm["vmid"]] = vm_details
+                    self.virtual_machines[vm["vmid"]] = vm_details
         apiGetPools = self.pmApi + "/api2/json/pools"
         pm_get_pools = requests.get(apiGetPools, headers=self.pmAuthJson, verify=False)
         for pool in pm_get_pools.json()["data"]:
@@ -99,7 +104,7 @@ class Connection:
         pm_snapshots = requests.get(apiSnapshots, headers=self.pmAuthJson, verify=False)
         return pm_snapshots.json()["data"]
 
-    def create_snapshot(self, vmNode, vmID, snapshotName, includeRam="0", description='Created by Python'):
+    def create_snapshot(self, vmNode, vmID, snapshotName="proxmox_manager", includeRam="0", description='Created by Python'):
         data = {
             "node": vmNode,
             "snapname": snapshotName,
@@ -110,6 +115,46 @@ class Connection:
         apiCreateSnapshot = self.pmApi + "/api2/json/nodes/" + vmNode + "/qemu/" + vmID + "/snapshot"
         pm_create_snapshot = requests.post(apiCreateSnapshot, headers=self.pmAuthJson, data=data, verify=False)
         return pm_create_snapshot.json()
+
+    def revertLatestSnapshot(self, vmNode, vmID):
+        snapshots = self.get_snapshots(vmNode, vmID)
+        print(snapshots)
+        snapTimes = []
+        for snap in snapshots:
+            try:
+                if snap["snaptime"]:
+                    snapTimes.append(snap["snaptime"])
+            except:
+                None
+        for snap in snapshots:
+            try:
+                if snap["snaptime"] == max(snapTimes):
+                    apiRevertSnapLatest = self.pmApi + "/api2/json/nodes/" + vmNode + "/qemu/" + vmID + "/snapshot/" + snap["name"] + "/rollback"
+                    pm_snapback_latest = requests.post(apiRevertSnapLatest, headers=self.pmAuthJson, verify=False)
+                    return pm_snapback_latest.json()["data"]
+            except:
+                None
+        return
+
+    def revertEarliestSnapshot(self, vmNode, vmID):
+        snapshots = self.get_snapshots(vmNode, vmID)
+        print(snapshots)
+        snapTimes = []
+        for snap in snapshots:
+            try:
+                if snap["snaptime"]:
+                    snapTimes.append(snap["snaptime"])
+            except:
+                None
+        for snap in snapshots:
+            try:
+                if snap["snaptime"] == min(snapTimes):
+                    apiRevertSnapLatest = self.pmApi + "/api2/json/nodes/" + vmNode + "/qemu/" + vmID + "/snapshot/" + snap["name"] + "/rollback"
+                    pm_snapback_latest = requests.post(apiRevertSnapLatest, headers=self.pmAuthJson, verify=False)
+                    return pm_snapback_latest.json()["data"]
+            except:
+                None
+        return
 
     def delete_snapshot(self, vmNode, vmID, snapshotName, forceDelete="0"):
         newHeader = {
@@ -169,6 +214,7 @@ class Connection:
             "full": "0"
         }
         pm_create_clone_linked = requests.post(apiClone, headers=self.pmAuthJson, data=data, verify=False)
+        self.wait_on_task(vmNode, pm_create_clone_linked.json()["data"])
         return pm_create_clone_linked.json()["data"]
 
     def create_clone_full(self, vmNode, vmSourceId, pool="Lab"):
@@ -178,14 +224,16 @@ class Connection:
             "pool": pool,
             "full": "1"
         }
-        pm_create_clone_linked = requests.post(apiClone, headers=self.pmAuthJson, data=data, verify=False)
-        return pm_create_clone_linked.json()["data"]
+        pm_create_clone_full = requests.post(apiClone, headers=self.pmAuthJson, data=data, verify=False)
+        self.wait_on_task(vmNode, pm_create_clone_full.json()["data"])
+        return pm_create_clone_full.json()["data"]
 
     def destroy_vm(self, vmId):
-        apiDestroy = self.pmApi + "/api2/json/nodes/" + self.endpoints[vmId]["node"] + "/qemu/" + vmId
+        apiDestroy = self.pmApi + "/api2/json/nodes/" + self.virtual_machines[vmId]["node"] + "/qemu/" + vmId
         pm_destroy_vm = requests.delete(apiDestroy, headers=self.pmAuthJson, verify=False)
         return pm_destroy_vm.json()
 
     def destroy_pool_vms(self, pool):
         for vm in self.pools[pool]:
-            self.destroy_vm(str(vm))
+            if self.virtual_machines[str(vm)]["template"] == 1:
+                self.destroy_vm(str(vm))
