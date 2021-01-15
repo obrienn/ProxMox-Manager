@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1081</width>
-    <height>546</height>
+    <height>986</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -18,21 +18,30 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>0</width>
-    <height>0</height>
+    <width>1081</width>
+    <height>986</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>1081</width>
+    <height>986</height>
    </size>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
+  <property name="tabShape">
+   <enum>QTabWidget::Rounded</enum>
+  </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QWidget" name="">
+   <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>10</x>
       <y>10</y>
       <width>1061</width>
-      <height>521</height>
+      <height>971</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout">
@@ -125,6 +134,22 @@
       </layout>
      </item>
      <item>
+      <widget class="QCheckBox" name="checkBoxTemplatesRestriction">
+       <property name="font">
+        <font>
+         <pointsize>10</pointsize>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>Restrict View and Cloning Operations to Templates Only</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QLabel" name="labelPoolManagement">
        <property name="font">
         <font>
@@ -178,6 +203,16 @@
           </widget>
          </item>
          <item>
+          <widget class="QLabel" name="labelTemplateNote">
+           <property name="text">
+            <string>Note: Restricts view scope above.</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item>
           <spacer name="verticalSpacerCloning">
            <property name="orientation">
             <enum>Qt::Vertical</enum>
@@ -189,48 +224,6 @@
             </size>
            </property>
           </spacer>
-         </item>
-         <item>
-          <widget class="QCheckBox" name="checkBoxTemplatesRestriction">
-           <property name="font">
-            <font>
-             <pointsize>10</pointsize>
-             <bold>true</bold>
-            </font>
-           </property>
-           <property name="text">
-            <string>Only Clone Resource Pool Templates</string>
-           </property>
-           <property name="checked">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="labelTemplateNote">
-           <property name="text">
-            <string>Note: Restricts view scope above.</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QCheckBox" name="checkBoxLinkedClones">
-           <property name="font">
-            <font>
-             <pointsize>10</pointsize>
-             <bold>true</bold>
-            </font>
-           </property>
-           <property name="text">
-            <string>Create Linked Clones</string>
-           </property>
-           <property name="checked">
-            <bool>true</bool>
-           </property>
-          </widget>
          </item>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayoutSelectNode">
@@ -274,7 +267,7 @@
            <item>
             <widget class="QLabel" name="labelSourcePool">
              <property name="text">
-              <string>Select a Resource Pool Source</string>
+              <string>...select a source pool above</string>
              </property>
             </widget>
            </item>
@@ -314,9 +307,61 @@
           </layout>
          </item>
          <item>
+          <layout class="QHBoxLayout" name="horizontalLayoutCloneNetwork">
+           <item>
+            <widget class="QLabel" name="labelPoolCloneNetwork">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="text">
+              <string>Select Network</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QComboBox" name="comboBoxCloneNetwork"/>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="checkBoxLinkedClones">
+           <property name="font">
+            <font>
+             <pointsize>10</pointsize>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>Create Linked Clones</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="checkBoxStartClonedPoolVms">
+           <property name="font">
+            <font>
+             <pointsize>10</pointsize>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>Start VMs on Deploy</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QPushButton" name="pushButtonClone">
            <property name="text">
-            <string>PushButton</string>
+            <string>Clone Pool</string>
            </property>
           </widget>
          </item>
@@ -549,6 +594,286 @@
           <widget class="QPushButton" name="pushButtonDelete">
            <property name="text">
             <string>Remove Non-Protected Non-Template VM's</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="QLabel" name="labelAdditionalTools">
+       <property name="font">
+        <font>
+         <family>Arial</family>
+         <pointsize>20</pointsize>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::Panel</enum>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Raised</enum>
+       </property>
+       <property name="lineWidth">
+        <number>4</number>
+       </property>
+       <property name="midLineWidth">
+        <number>2</number>
+       </property>
+       <property name="text">
+        <string>Additional Tools</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayoutAdditionalTools">
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayoutCloneVM">
+         <item>
+          <widget class="QLabel" name="labelCloneIndividualVM">
+           <property name="font">
+            <font>
+             <family>Arial</family>
+             <pointsize>16</pointsize>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>Clone Single VM</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayoutVMSelectNode">
+           <item>
+            <widget class="QLabel" name="labelVMNode">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="text">
+              <string>Select Node</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QComboBox" name="comboBoxVMNode"/>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayoutVMConfirmPool">
+           <item>
+            <widget class="QLabel" name="labelVMConfirmSourcePool">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="text">
+              <string>Confirm Source Pool</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="labelVMSelectedSourcePool">
+             <property name="text">
+              <string>...select a source pool above</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayoutVMConfirmVM">
+           <item>
+            <widget class="QLabel" name="labelVMConfirmVM">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="text">
+              <string>Confirm Source VM</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="labelVMSelectedVM">
+             <property name="text">
+              <string>..select a source VM above</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayoutVMTargetPool">
+           <item>
+            <widget class="QLabel" name="labelVMSelectTargetPool">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="text">
+              <string>Select Target Pool</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QComboBox" name="comboBoxVMTargetPool"/>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayoutVMName">
+           <item>
+            <widget class="QLabel" name="labelNewVMName">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="text">
+              <string>Enter a name for the new VM</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="lineEditVMName">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="placeholderText">
+              <string>Optional</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButtonCloneVM">
+           <property name="text">
+            <string>Clone VM</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayoutLabs">
+         <item>
+          <widget class="QLabel" name="labelLabs">
+           <property name="font">
+            <font>
+             <family>Arial</family>
+             <pointsize>16</pointsize>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>Create a Lab Environment</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayoutLabsNode">
+           <item>
+            <widget class="QLabel" name="labelLabNode">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="text">
+              <string>Select Node</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QComboBox" name="comboBoxLabNode"/>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayoutLabsConfig">
+           <item>
+            <widget class="QLabel" name="labelSelectLab">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="text">
+              <string>Select Lab Config</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QComboBox" name="comboBoxLabConfig"/>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayoutLabNetwork">
+           <item>
+            <widget class="QLabel" name="labelLabNetwork">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="text">
+              <string>Select Network</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QComboBox" name="comboBoxLabNetwork"/>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="checkBox">
+           <property name="font">
+            <font>
+             <pointsize>10</pointsize>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>Start VMs on Deploy</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButtonCreateLabEnvironment">
+           <property name="text">
+            <string>Create Lab Environment</string>
            </property>
           </widget>
          </item>

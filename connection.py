@@ -10,6 +10,7 @@ class Connection:
     virtual_machines = {}
     snapshots = {}
     pools = {}
+    bridges = {}
 
     def set_session(self, myApi, myAuthJson):
         self.pmApi = myApi
@@ -55,8 +56,7 @@ class Connection:
                 node_bridges_array.append(interface["iface"])
 
         node_bridges[vmNode] = node_bridges_array
-        node_bridges_json = json.dumps(node_bridges)
-        return node_bridges_json
+        return node_bridges[vmNode]
 
     def get_virtual_machines(self, vmNode):
         apiNodeVms = self.pmApi + "/api2/json/nodes/" + vmNode + "/qemu"
@@ -68,6 +68,8 @@ class Connection:
         self.virtual_machines = {}
         self.snapshots = {}
         for vmNode in vmNodes["data"]:
+            bridgesJson = self.get_node_network_bridges(vmNode["node"])
+            self.bridges[vmNode["node"]] = bridgesJson
             vms = self.get_virtual_machines(vmNode["node"])
             for vm in vms["data"]:
                 if vm["template"] == 1:
@@ -182,11 +184,17 @@ class Connection:
 
     def set_network_bridge(self, vmNode, vmID, vmNetId='net0', vmNetBridge='e1000,bridge=vmbr0,firewall=0,link_down=0'):
         # vmNetBridge should look like 'e1000,bridge=vmbr0'
+        if vmNetBridge != 'e1000,bridge=vmbr0,firewall=0,link_down=0':
+            vmBridge = 'e1000,bridge=' + vmNetBridge + ',firewall=0,link_down=0'
+        else:
+            vmBridge = vmNetBridge
+
         data = {
             "node": vmNode,
             "vmid": vmID,
-            vmNetId: vmNetBridge
+            vmNetId: vmBridge
         }
+        print(vmBridge)
         apiSetNetBridge = self.pmApi + "/api2/json/nodes/" + vmNode + "/qemu/" + vmID + "/config"
         pm_set_net_bridge = requests.post(apiSetNetBridge, headers=self.pmAuthJson, data=data, verify=False)
         return pm_set_net_bridge.json()
@@ -208,25 +216,31 @@ class Connection:
 
     def create_clone_linked(self, vmNode, vmSourceId, pool="Lab"):
         apiClone = self.pmApi + "/api2/json/nodes/" + vmNode + "/qemu/" + vmSourceId + "/clone"
+        newID = self.get_free_vmid()
         data = {
-            "newid": self.get_free_vmid(),
+            "newid": newID,
             "pool": pool,
             "full": "0"
         }
         pm_create_clone_linked = requests.post(apiClone, headers=self.pmAuthJson, data=data, verify=False)
         self.wait_on_task(vmNode, pm_create_clone_linked.json()["data"])
-        return pm_create_clone_linked.json()["data"]
+        return str(newID)
 
-    def create_clone_full(self, vmNode, vmSourceId, pool="Lab"):
+    def create_clone_full(self, vmNode, vmSourceId, pool="Lab", name=""):
+        if name == "":
+            name = self.virtual_machines[vmSourceId]["name"]
+        newID = self.get_free_vmid()
         apiClone = self.pmApi + "/api2/json/nodes/" + vmNode + "/qemu/" + vmSourceId + "/clone"
         data = {
-            "newid": self.get_free_vmid(),
+            "newid": newID,
             "pool": pool,
-            "full": "1"
+            "full": "1",
+            "name": name
         }
         pm_create_clone_full = requests.post(apiClone, headers=self.pmAuthJson, data=data, verify=False)
+        print(pm_create_clone_full.json())
         self.wait_on_task(vmNode, pm_create_clone_full.json()["data"])
-        return pm_create_clone_full.json()["data"]
+        return str(newID)
 
     def destroy_vm(self, vmId):
         apiDestroy = self.pmApi + "/api2/json/nodes/" + self.virtual_machines[vmId]["node"] + "/qemu/" + vmId
@@ -237,3 +251,32 @@ class Connection:
         for vm in self.pools[pool]:
             if self.virtual_machines[str(vm)]["template"] == 1:
                 self.destroy_vm(str(vm))
+
+    def startVM(self, vmid, node=""):
+        if node == "":
+            try:
+                targetNode = self.virtual_machines[vmid]["node"]
+            except:
+                self.get_initial_gui_data()
+                targetNode = self.virtual_machines[vmid]["node"]
+        else:
+            targetNode = node
+
+        apiStartVM = self.pmApi + "/api2/json/nodes/" + targetNode + "/qemu/" + vmid + "/status/start"
+        pm_start_vm = requests.post(apiStartVM, headers=self.pmAuthJson, verify=False)
+        return pm_start_vm.json()
+
+    def stopVM(self, vmid, node=""):
+        if node == "":
+            try:
+                targetNode = self.virtual_machines[vmid]["node"]
+            except:
+                self.get_initial_gui_data()
+                targetNode = self.virtual_machines[vmid]["node"]
+        else:
+            targetNode = node
+
+        apiStopVM = self.pmApi + "/api2/json/nodes/" + targetNode + "/qemu/" + vmid + "/status/stop"
+        pm_stop_vm = requests.post(apiStopVM, headers=self.pmAuthJson, verify=False)
+        self.wait_on_task(targetNode, pm_stop_vm.json()["data"])
+        return pm_stop_vm.json()
