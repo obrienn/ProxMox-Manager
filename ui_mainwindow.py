@@ -27,7 +27,7 @@ class Ui_MainWindow(object):
         self.nodes = self.pmconnection.get_nodes()
         self.node = self.nodes["data"][0]["node"]
 
-        self.pmconnection.get_initial_gui_data(self.nodes)
+        self.pmconnection.get_initial_gui_data()
 
         self.labTemplates = []
         self.getLabTemplates()
@@ -751,7 +751,7 @@ class Ui_MainWindow(object):
                 if self.checkBoxStartClonedPoolVms.isChecked():
                     print("Starting the VM")
                     print(self.pmconnection.startVM(str(newVMID)))
-        self.pmconnection.get_initial_gui_data(self.nodes)
+        self.pmconnection.get_initial_gui_data()
         self.updateVmsListFromPool()
         self.pushButtonClone.setDisabled(0)
         return
@@ -780,6 +780,7 @@ class Ui_MainWindow(object):
         print("LOG: Clearing out resource pool " + targetPool)
         for vmid in self.pmconnection.pools[targetPool]:
             print("LOG: --- Deleting " + self.pmconnection.virtual_machines[str(vmid)]["name"])
+            self.pmconnection.stopVM(str(vmid))
             self.pmconnection.destroy_vm(str(vmid))
         self.pushButtonDelete.setDisabled(0)
         return
@@ -843,6 +844,9 @@ class Ui_MainWindow(object):
 
     def createLabEnvironment(self):
         self.pushButtonCreateLabEnvironment.setDisabled(1)
+        targetNode = self.comboBoxLabNode.currentText()
+        targetPool = self.comboBoxLabPool.currentText()
+        targetNetwork = self.comboBoxLabNetwork.currentText()
         labFile = open(self.comboBoxLabConfig.currentText(),'r')
         labLines = labFile.readlines()
         fullClone = True
